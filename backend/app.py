@@ -1,7 +1,13 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import sqlite3
 
+
+
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
+
+# Your existing routes here...
 
 # Function to fetch all posts
 def fetch_posts():
@@ -98,6 +104,44 @@ def get_post_by_id(post_id):
     }
     
     return jsonify(post)
+
+
+@app.route('/api/comments-per-post', methods=['GET'])
+def comments_per_post():
+    conn = sqlite3.connect('subtrends.db')
+    cursor = conn.cursor()
+    
+    # Query to fetch post titles and comment counts
+    cursor.execute('SELECT title, num_comments FROM posts ORDER BY num_comments DESC LIMIT 10')
+    rows = cursor.fetchall()
+    
+    conn.close()
+    
+    # Format the data
+    data = {
+        "labels": [row[0] for row in rows],  # Post Titles (X-axis)
+        "data": [row[1] for row in rows],    # Number of Comments (Y-axis)
+    }
+    return jsonify(data)
+
+@app.route('/api/scores-over-time', methods=['GET'])
+def scores_over_time():
+    conn = sqlite3.connect('subtrends.db')
+    cursor = conn.cursor()
+    
+    # Query to fetch scores and created_at timestamps
+    cursor.execute('SELECT created_at, score FROM posts ORDER BY created_at ASC')
+    rows = cursor.fetchall()
+    
+    conn.close()
+    
+    # Format the data
+    data = {
+        "labels": [row[0] for row in rows],  # Dates (X-axis)
+        "data": [row[1] for row in rows],    # Scores (Y-axis)
+    }
+    return jsonify(data)
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)  # Run the server on port 5001
